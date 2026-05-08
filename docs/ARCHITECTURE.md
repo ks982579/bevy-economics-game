@@ -14,9 +14,11 @@ Top-down 2D economy simulation built with Bevy 0.18.1.
 
 | Component | Description |
 |-----------|-------------|
-| `Player`  | Marker component on the player entity. Green 32×32 sprite. |
+| `Player`  | Marker on the player entity. Green 32×32. |
+| `Building` | Marker on static building entities. Dark grey rectangles. |
+| `Collider` | AABB half-extents (`half_w`, `half_h`). Added to any solid entity. |
 
-> NPC entities will use a `Npc` marker component. Convention: blue 32×32 sprites.
+> NPC entities will use an `Npc` marker component. Convention: blue 32×32 sprites.
 
 ---
 
@@ -24,8 +26,8 @@ Top-down 2D economy simulation built with Bevy 0.18.1.
 
 | System | Schedule | Description |
 |--------|----------|-------------|
-| `setup` | `Startup` | Spawns camera and player |
-| `move_player` | `Update` | Reads WASD input, moves player transform |
+| `setup` | `Startup` | Spawns camera, player, and buildings |
+| `move_player` | `Update` | Reads WASD input, moves player, resolves AABB collisions |
 
 ---
 
@@ -46,3 +48,6 @@ Currently all code lives in `src/main.rs`. As the project grows, split into:
 |----------|-------|---------|
 | `PLAYER_SPEED` | `200.0` px/s | Player movement speed |
 | `PLAYER_SIZE`  | `32.0` px    | Player sprite dimensions |
+| `BUILDING_W`   | `120.0` px   | Building width |
+| `BUILDING_H`   | `80.0` px    | Building height |
+| `BUILDING_X`   | `-480.0` px  | Building spawn x (left of center) |
