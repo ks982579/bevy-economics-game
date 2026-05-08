@@ -1,0 +1,24 @@
+[package]
+name = "bevy-economy-sim"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = { version = "0.18.1", default-features = false, features = [
+  # app scaffolding
+  "bevy_asset", "bevy_state", "bevy_window", "bevy_winit", "bevy_log",
+  "default_font", "multi_threaded", "async_executor", "reflect_auto_register",
+  # 2D rendering
+  "bevy_core_pipeline", "bevy_render", "bevy_sprite", "bevy_mesh", "bevy_sprite_render",
+  # UI & text
+  "bevy_ui", "bevy_text",
+  # X11 only (no wayland)
+  "x11",
+] }
+
+# Enable fast compile times in debug builds
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
