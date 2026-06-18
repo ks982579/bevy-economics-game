@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::{Collider, Player, PLAYER_SIZE, PLAYER_SPEED, resolve_aabb};
+use crate::shared::{Collider, OverworldContext, Player, PLAYER_SIZE, PLAYER_SPEED, resolve_aabb};
 use crate::state::GameState;
 
 const BUILDING_W: f32 = 120.0;
@@ -39,14 +39,16 @@ fn setup_overworld(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    ctx: Res<OverworldContext>,
 ) {
+    let pos = ctx.player_pos;
     commands.spawn((
         Player,
         OverworldEntity,
         Collider::new(PLAYER_SIZE, PLAYER_SIZE),
         Mesh2d(meshes.add(Rectangle::new(PLAYER_SIZE, PLAYER_SIZE))),
         MeshMaterial2d(materials.add(ColorMaterial::from_color(Color::srgb(0.2, 0.8, 0.2)))),
-        Transform::from_xyz(0.0, 0.0, 3.0),
+        Transform::from_xyz(pos.x, pos.y, 3.0),
     ));
 
     commands.spawn((
@@ -105,6 +107,7 @@ pub fn check_building_entry(
     mut commands: Commands,
     player_query: Query<(Entity, &Transform, &Collider), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut ctx: ResMut<OverworldContext>,
 ) {
     let Ok((player_entity, transform, player_col)) = player_query.single() else { return };
 
@@ -118,6 +121,7 @@ pub fn check_building_entry(
         && dy < player_col.half_h + entrance_col.half_h;
 
     if overlapping {
+        ctx.player_pos = player_pos;
         commands.entity(player_entity).despawn();
         next_state.set(GameState::Office);
     }
@@ -132,7 +136,8 @@ mod tests {
         app.add_plugins((MinimalPlugins, bevy::state::app::StatesPlugin))
             .init_resource::<Assets<Mesh>>()
             .init_resource::<Assets<ColorMaterial>>()
-            .init_resource::<ButtonInput<KeyCode>>();
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<OverworldContext>();
         app
     }
 
@@ -201,6 +206,51 @@ mod tests {
 
         let state = app.world().resource::<State<GameState>>();
         assert_eq!(*state.get(), GameState::Overworld, "should stay in Overworld");
+    }
+
+    #[test]
+    fn entry_trigger_saves_player_position() {
+        let mut app = test_app();
+        app.init_state::<GameState>()
+            .add_systems(Update, check_building_entry.run_if(in_state(GameState::Overworld)));
+
+        let spawn_pos = Vec2::new(BUILDING_X + 5.0, ENTRANCE_Y);
+        app.world_mut().spawn((
+            Player,
+            Collider::new(PLAYER_SIZE, PLAYER_SIZE),
+            Transform::from_xyz(spawn_pos.x, spawn_pos.y, 3.0),
+        ));
+        app.update();
+
+        let saved = app.world().resource::<OverworldContext>().player_pos;
+        assert!(
+            saved.distance(spawn_pos) < 1.0,
+            "OverworldContext should record where the player entered the building, got {saved:?}"
+        );
+    }
+
+    #[test]
+    fn setup_overworld_spawns_player_at_context_position() {
+        let mut app = test_app();
+        let saved_pos = Vec2::new(123.0, 45.0);
+        app.world_mut().resource_mut::<OverworldContext>().player_pos = saved_pos;
+
+        app.init_state::<GameState>()
+            .add_systems(OnEnter(GameState::Overworld), setup_overworld);
+
+        app.world_mut()
+            .resource_mut::<NextState<GameState>>()
+            .set(GameState::Overworld);
+        app.update();
+        app.update();
+
+        let mut q = app.world_mut().query_filtered::<&Transform, With<Player>>();
+        let t = q.single(app.world()).unwrap();
+        let actual = t.translation.truncate();
+        assert!(
+            actual.distance(saved_pos) < 1.0,
+            "player should spawn at saved position {saved_pos:?}, got {actual:?}"
+        );
     }
 
     #[test]

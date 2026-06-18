@@ -17,6 +17,8 @@ fn main() {
             ..default()
         }))
         .init_state::<state::GameState>()
+        .init_resource::<shared::OverworldContext>()
+        .init_resource::<shared::OfficeContext>()
         .add_plugins((
             overworld::OverworldPlugin,
             office::OfficePlugin,

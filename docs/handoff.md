@@ -1,5 +1,8 @@
 # Handoff
 
+> **Superseded by CHANGELOG.md** — use that for current status, bug history, and backlog.
+> This file is kept for historical reference only.
+
 Quick summary of where the project is and what to do next.
 
 ---

@@ -12,10 +12,20 @@ cargo test <name>        # run a single test by name substring
 cargo clippy             # lint
 ```
 
+## Changelog discipline
+
+**CHANGELOG.md is the primary log for this project.** Update it at the end of every session or whenever something notable happens:
+- Append bug fixes (with root cause) to the current version's `### Fixed` section
+- Append new features to `### Added`
+- Add ideas and future work to `## [Unreleased]` → `### Ideas / Backlog`
+- Do NOT bump the version number unless the user explicitly asks
+
+This replaces `docs/handoff.md` as the handoff document between sessions.
+
 ## Architecture
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for component/system design.
-See [CHANGELOG.md](CHANGELOG.md) for the backlog and ideas list.
+See [CHANGELOG.md](CHANGELOG.md) for the backlog, bug history, and ideas list.
 
 ### Module structure
 

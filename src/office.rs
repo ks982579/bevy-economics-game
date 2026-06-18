@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::{Collider, Player, PLAYER_SIZE, PLAYER_SPEED, resolve_aabb};
+use crate::shared::{Collider, OfficeContext, Player, PLAYER_SIZE, PLAYER_SPEED, resolve_aabb};
 use crate::state::GameState;
 
 const OFFICE_W: f32 = 800.0;
@@ -51,15 +51,16 @@ fn setup_office(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    ctx: Res<OfficeContext>,
 ) {
-    // Spawn player at the bottom of the office (just came through the door)
+    let pos = ctx.player_pos;
     commands.spawn((
         Player,
         OfficeEntity,
         Collider::new(PLAYER_SIZE, PLAYER_SIZE),
         Mesh2d(meshes.add(Rectangle::new(PLAYER_SIZE, PLAYER_SIZE))),
         MeshMaterial2d(materials.add(ColorMaterial::from_color(Color::srgb(0.2, 0.8, 0.2)))),
-        Transform::from_xyz(0.0, -200.0, 3.0),
+        Transform::from_xyz(pos.x, pos.y, 3.0),
     ));
 
     // Office floor
@@ -146,6 +147,7 @@ pub fn move_player_office(
     mut player_query: Query<(&mut Transform, &Collider), With<Player>>,
     obstacle_query: Query<(&Transform, &Collider), (With<OfficeFurniture>, Without<Player>)>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut ctx: ResMut<OfficeContext>,
 ) {
     let Ok((mut transform, player_col)) = player_query.single_mut() else { return };
 
@@ -168,6 +170,7 @@ pub fn move_player_office(
 
     // Walking through the open bottom wall returns to the overworld
     if new_pos.y < -OFFICE_H / 2.0 + PLAYER_SIZE {
+        ctx.player_pos = new_pos;
         next_state.set(GameState::Overworld);
         return;
     }
@@ -180,6 +183,7 @@ pub fn check_computer_interact(
     player_query: Query<&Transform, With<Player>>,
     computer_query: Query<&Transform, With<PlayerComputer>>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut ctx: ResMut<OfficeContext>,
 ) {
     if !keys.just_pressed(KeyCode::KeyE) { return; }
 
@@ -188,6 +192,7 @@ pub fn check_computer_interact(
 
     let dist = player_t.translation.truncate().distance(computer_t.translation.truncate());
     if dist <= INTERACT_RANGE {
+        ctx.player_pos = player_t.translation.truncate();
         next_state.set(GameState::EmailMinigame);
     }
 }
@@ -201,7 +206,8 @@ mod tests {
         app.add_plugins((MinimalPlugins, bevy::state::app::StatesPlugin))
             .init_resource::<Assets<Mesh>>()
             .init_resource::<Assets<ColorMaterial>>()
-            .init_resource::<ButtonInput<KeyCode>>();
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<OfficeContext>();
         app
     }
 
@@ -263,6 +269,62 @@ mod tests {
 
         let state = app.world().resource::<State<GameState>>();
         assert_eq!(*state.get(), GameState::EmailMinigame);
+    }
+
+    #[test]
+    fn setup_office_spawns_player_at_context_position() {
+        let mut app = test_app();
+        let saved_pos = Vec2::new(-50.0, -100.0);
+        app.world_mut().resource_mut::<OfficeContext>().player_pos = saved_pos;
+
+        app.init_state::<GameState>()
+            .add_systems(OnEnter(GameState::Office), setup_office);
+
+        app.world_mut()
+            .resource_mut::<NextState<GameState>>()
+            .set(GameState::Office);
+        app.update();
+        app.update();
+
+        let mut q = app.world_mut().query_filtered::<&Transform, With<Player>>();
+        let t = q.single(app.world()).unwrap();
+        let actual = t.translation.truncate();
+        assert!(
+            actual.distance(saved_pos) < 1.0,
+            "player should spawn at saved position {saved_pos:?}, got {actual:?}"
+        );
+    }
+
+    #[test]
+    fn e_key_near_computer_saves_position_and_transitions() {
+        let mut app = test_app();
+        app.init_state::<GameState>()
+            .add_systems(Update, check_computer_interact.run_if(in_state(GameState::Office)));
+
+        let (desk_x, desk_y) = DESK_POSITIONS[PLAYER_DESK_IDX];
+        let computer_pos = Vec3::new(desk_x, desk_y + DESK_H / 2.0 + COMPUTER_H / 2.0, 2.0);
+        let player_pos = computer_pos + Vec3::new(20.0, 0.0, 1.0);
+
+        app.world_mut().spawn((Player, Transform::from_translation(player_pos)));
+        app.world_mut().spawn((PlayerComputer, Transform::from_translation(computer_pos)));
+
+        app.world_mut()
+            .resource_mut::<NextState<GameState>>()
+            .set(GameState::Office);
+        app.update();
+
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::KeyE);
+        app.update();
+        app.update();
+
+        let saved = app.world().resource::<OfficeContext>().player_pos;
+        let expected = player_pos.truncate();
+        assert!(
+            saved.distance(expected) < 1.0,
+            "OfficeContext should record player pos before entering email, got {saved:?}"
+        );
     }
 
     #[test]

@@ -19,6 +19,31 @@ pub struct Player;
 pub const PLAYER_SPEED: f32 = 200.0;
 pub const PLAYER_SIZE: f32 = 32.0;
 
+/// Saved overworld player position. Persists across state transitions so the
+/// player reappears where they left, not at the spawn default.
+#[derive(Resource)]
+pub struct OverworldContext {
+    pub player_pos: Vec2,
+}
+
+impl Default for OverworldContext {
+    fn default() -> Self {
+        Self { player_pos: Vec2::ZERO }
+    }
+}
+
+/// Saved office player position. Default puts the player just inside the entrance.
+#[derive(Resource)]
+pub struct OfficeContext {
+    pub player_pos: Vec2,
+}
+
+impl Default for OfficeContext {
+    fn default() -> Self {
+        Self { player_pos: Vec2::new(0.0, -200.0) }
+    }
+}
+
 /// Resolves AABB overlap between `new_pos` and an obstacle. Returns the pushed-out position.
 pub fn resolve_aabb(
     new_pos: Vec2,
