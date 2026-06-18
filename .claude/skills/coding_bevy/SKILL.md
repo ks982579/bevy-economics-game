@@ -76,10 +76,16 @@ fn my_system(query: Query<&Transform>) -> Result {
 }
 ```
 
-### 6. 2D camera is required — always spawn one
+### 6. One persistent camera — never per-scene
+
+Spawn `Camera2d` **once** in a `Startup` system in `main.rs`. Do not spawn or despawn cameras inside scene plugins (`OnEnter` / `OnExit`). When a scene despawns its camera and the next scene spawns a replacement, there is a one-frame gap where no camera exists — the renderer produces a grey/black frame or stalls.
 
 ```rust
-commands.spawn(Camera2d);
+// main.rs — once at startup
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+app.add_systems(Startup, spawn_camera);
 ```
 
 Nothing renders without a camera. Camera sits at z = 1000 looking down -Z.
@@ -87,6 +93,56 @@ Nothing renders without a camera. Camera sits at z = 1000 looking down -Z.
 ### 7. Transform z controls draw order in 2D
 
 Higher z renders on top. Keep all 2D entities between z = 0.0 and z = 999.0.
+
+### 8. StateScoped does NOT exist in 0.18
+
+The `StateScoped` component was not shipped in Bevy 0.18. Do not use it. The correct
+pattern is a scene-marker component + `OnExit` cleanup:
+
+```rust
+#[derive(Component)]
+struct SceneEntity;   // tag every entity spawned in this scene
+
+fn cleanup(mut commands: Commands, q: Query<Entity, With<SceneEntity>>) {
+    for e in &q { commands.entity(e).despawn(); }
+}
+
+app.add_systems(OnExit(GameState::Playing), cleanup);
+```
+
+### 9. despawn_recursive is gone in 0.18
+
+`despawn_recursive()` does not exist. Use `despawn()` — it automatically despawns
+children in Bevy 0.18.
+
+```rust
+// WRONG
+commands.entity(e).despawn_recursive();
+
+// CORRECT
+commands.entity(e).despawn();
+```
+
+### 10. BorderColor is a struct, not a tuple
+
+```rust
+// WRONG
+BorderColor(Color::WHITE)
+
+// CORRECT
+BorderColor::all(Color::WHITE)
+```
+
+### 11. Children::iter() yields Entity, not &Entity
+
+```rust
+// WRONG
+for &child in children.iter() { ... }
+
+// CORRECT
+for child in children.iter() { ... }
+// child is Entity (Copy), so you can pass it directly
+```
 
 ## Controls convention
 
@@ -107,3 +163,4 @@ Higher z renders on top. Keep all 2D entities between z = 0.0 and z = 999.0.
 | Transform movement, velocity, clamping | [movement.md](references/movement.md) |
 | MinimalPlugins, RunSystemOnce, test assertions | [testing.md](references/testing.md) |
 | AABB collision, disjoint queries, depenetration | [collision.md](references/collision.md) |
+| Bevy UI — Node, Text, Button, layout | [ui.md](references/ui.md) |

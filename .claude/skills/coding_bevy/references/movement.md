@@ -1,30 +1,33 @@
 # Bevy 0.18 Movement Patterns
 
-## The golden rule: use FixedUpdate for all movement
+## Update vs FixedUpdate for movement
 
-Put movement systems in `FixedUpdate`, not `Update`. This makes behaviour
-frame-rate independent. Default fixed timestep is 64 Hz.
+**Preferred for physics/simulation:** `FixedUpdate` at 64 Hz — frame-rate independent.
+Use `Res<Time<Fixed>>` for the delta inside `FixedUpdate` systems.
 
 ```rust
 app.add_systems(FixedUpdate, move_player);
-```
 
-Inside a `FixedUpdate` system, use `Time<Fixed>` for the delta:
-
-```rust
-fn move_player(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &Speed), With<Player>>,
-    time: Res<Time<Fixed>>,          // <-- Fixed, not Time
-) {
-    let Ok((mut transform, speed)) = query.single_mut() else { return; };
-    // ...
-    transform.translation.x += dx * speed.0 * time.delta_secs();
+fn move_player(time: Res<Time<Fixed>>, ...) {
+    transform.translation.x += dx * speed * time.delta_secs();
 }
 ```
 
-If you use `Res<Time>` (generic) in a `FixedUpdate` system it compiles fine but
-gives the wrong delta — it returns the variable frame delta instead of the fixed one.
+**Acceptable for simple player movement:** `Update` with `Res<Time>` — slightly simpler,
+works fine when movement is direct (not simulated physics). This is what the project
+currently uses. The key is always multiplying by `time.delta_secs()` so speed is
+px/second regardless of frame rate.
+
+```rust
+app.add_systems(Update, move_player);
+
+fn move_player(time: Res<Time>, ...) {
+    transform.translation.x += dx * speed * time.delta_secs();
+}
+```
+
+If you use `Res<Time>` (generic) inside a `FixedUpdate` system it compiles but gives
+the wrong delta — returns the variable frame delta, not the fixed one.
 
 ---
 

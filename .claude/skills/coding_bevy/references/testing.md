@@ -82,11 +82,24 @@ app.update(); // second update: neither pressed nor just_released
 
 ## Testing game states
 
+`MinimalPlugins` does NOT include state support. Add `bevy::state::app::StatesPlugin` explicitly:
+
+```rust
+fn test_app_with_states() -> App {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::state::app::StatesPlugin))
+       .init_resource::<ButtonInput<KeyCode>>();
+    app
+}
+```
+
+State transitions scheduled with `NextState::set()` take effect at the **end** of the frame —
+you need **two** `app.update()` calls to observe the new state:
+
 ```rust
 fn test_state_transition() {
-    let mut app = App::new();
-    app.add_plugins(MinimalPlugins)
-       .init_state::<GameState>()
+    let mut app = test_app_with_states();
+    app.init_state::<GameState>()
        .add_systems(OnEnter(GameState::Playing), spawn_player)
        .add_systems(Update, move_player.run_if(in_state(GameState::Playing)));
 
@@ -95,8 +108,17 @@ fn test_state_transition() {
        .resource_mut::<NextState<GameState>>()
        .set(GameState::Playing);
 
-    app.update(); // OnEnter(Playing) fires here
+    app.update(); // transition applied, OnEnter(Playing) fires
     app.update(); // first Update in Playing state
+}
+
+// When testing that a system CAUSES a transition:
+fn test_system_triggers_transition() {
+    // ... spawn entities, set state ...
+    app.update(); // system runs, calls next_state.set(...)
+    app.update(); // transition now applied — assert new state here
+    let state = app.world().resource::<State<GameState>>();
+    assert_eq!(*state.get(), GameState::Playing);
 }
 ```
 

@@ -120,22 +120,31 @@ triggering `OnExit` (old state) then `OnEnter` (new state) in the next frame.
 
 ## State-scoped entity cleanup
 
-Tag entities that belong to a specific state with `StateScoped<S>`. They are
-automatically despawned when the state exits — no manual cleanup system needed.
+**`StateScoped` does NOT exist in Bevy 0.18.** Use a scene-marker component and an
+`OnExit` cleanup system instead. This is the correct pattern for this project:
 
 ```rust
-// Spawn a player that auto-despawns when leaving GameState::Playing
-commands.spawn((
-    Player,
-    Mesh2d(meshes.add(Rectangle::new(32.0, 32.0))),
-    MeshMaterial2d(materials.add(ColorMaterial::from_color(Color::srgb(0.2, 0.8, 0.2)))),
-    Transform::from_xyz(0.0, 0.0, 3.0),
-    StateScoped(GameState::Playing),   // <-- auto cleanup
-));
+/// Tag every entity spawned in this scene.
+#[derive(Component)]
+struct PlayingEntity;
+
+fn setup(mut commands: Commands, ...) {
+    commands.spawn((Player, PlayingEntity, ...));
+    commands.spawn((Enemy, PlayingEntity, ...));
+}
+
+fn cleanup(mut commands: Commands, q: Query<Entity, With<PlayingEntity>>) {
+    for entity in &q {
+        commands.entity(entity).despawn();
+    }
+}
+
+app.add_systems(OnEnter(GameState::Playing), setup)
+   .add_systems(OnExit(GameState::Playing),  cleanup);
 ```
 
-This is the preferred pattern. It eliminates the need for an `OnExit` cleanup system
-for most entities.
+For UI trees spawned with `with_children`, `despawn()` in 0.18 automatically
+despawns the full hierarchy — no `despawn_recursive()` needed (it doesn't exist).
 
 ---
 

@@ -7,20 +7,39 @@ All notable changes and ideas for this project will be tracked here.
 ## [Unreleased]
 
 ### Added
-- Green 32×32 player square spawned at world origin
-- WASD movement with delta-time scaling (200 px/s), diagonal movement normalized
-- `Player` component for future query filtering; NPC color convention: blue squares
-- Dark grey building (120×80) positioned left of center at x=-480
-- `Collider` component (AABB half-extents) on player and building
-- AABB collision resolution in `move_player` — player cannot walk through the building
+- `GameState` enum (`Overworld`, `Office`, `EmailMinigame`) in `src/state.rs`
+- `src/shared.rs` — shared `Player`, `Collider`, `resolve_aabb`, movement constants
+- Codebase split into modules: `overworld`, `office`, `email`, `shared`, `state`
+- **Office scene**: interior with 4 desks, walls, a bright-blue player computer
+- **Building entry**: walking into the door on the overworld transitions to `Office`
+- **Office exit**: walking south out of the office returns to `Overworld`
+- **Computer interaction**: press `E` near the player's computer → `EmailMinigame`
+- **Email minigame**: full-screen UI showing inbox emails; press `1/2/3` to reply, `Esc` to close
+- 4 sample emails in the inbox (`INBOX` constant in `src/email.rs`)
+- `EmailState` resource tracks current email index and completion
+- Scene cleanup via `*Entity` marker components + `OnExit` systems
 
 ### Ideas / Backlog
-- Add NPC entities (blue squares) with basic behavior
-- Add more buildings / world objects
-- Basic tile-based or free-movement world
-- Economy entities: shops, traders, resources
+- Add NPC entities (blue squares) with basic pathfinding
+- Add more buildings and world objects to the overworld
+- Economy entities: shops, traders, resources, inventory
 - Simple supply/demand simulation
-- UI overlay showing economy stats
+- UI overlay showing economy stats / money
+- Job progression: more minigames beyond email (e.g. spreadsheet puzzle, meetings)
+- Dialogue system for talking to NPCs
+- Save/load game state
+
+---
+
+## [0.2.0] — 2026-06-18
+
+### Added
+- Green 32×32 player square spawned at world origin
+- WASD movement with delta-time scaling (200 px/s), diagonal movement normalized
+- `Player` component; NPC color convention: blue squares
+- Dark grey building (120×80) positioned left of centre at x=-480
+- `Collider` component (AABB half-extents) on player and building
+- AABB collision resolution — player cannot walk through the building
 
 ---
 
