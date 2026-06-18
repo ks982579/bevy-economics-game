@@ -135,6 +135,28 @@ BorderColor::all(Color::WHITE)
 
 ### 11. Children::iter() yields Entity, not &Entity
 
+### 12. `bevy_ui` does NOT include UI rendering — add `bevy_ui_render` separately
+
+`bevy_ui` only provides the layout engine (Taffy/flexbox), component types (`Node`,
+`BackgroundColor`, etc.), and the ECS plumbing. The actual GPU draw calls are in
+`bevy_ui_render`, which is a **separate crate and feature flag**.
+
+Without `bevy_ui_render`, UI nodes exist, layout runs, and state transitions work — but
+**nothing is visible on screen** (grey/blank). The symptom is identical to a missing
+camera but the camera is fine.
+
+```toml
+# WRONG — UI layout only, no rendering
+"bevy_ui", "bevy_text"
+
+# CORRECT — layout + rendering
+"bevy_ui", "bevy_ui_render", "bevy_text"
+```
+
+This was discovered when the email minigame showed a grey screen. 13 tests passed,
+the state transitioned correctly, but the `Node` tree rendered nothing because
+`bevy_ui_render` was missing from Cargo.toml.
+
 ```rust
 // WRONG
 for &child in children.iter() { ... }

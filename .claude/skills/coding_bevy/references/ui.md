@@ -4,7 +4,12 @@ Bevy UI uses a flexbox-style layout engine (Taffy). All UI nodes are ECS entitie
 a `Node` component. Nothing in this section uses HTML/CSS — think of it as a pure Rust
 flexbox.
 
-Required features: `bevy_ui`, `bevy_text`, `default_font` (or the `2d` group).
+Required features: `bevy_ui`, **`bevy_ui_render`**, `bevy_text`, `default_font` (or the `2d` group).
+
+> **Critical:** `bevy_ui` and `bevy_ui_render` are separate features. `bevy_ui` provides
+> layout and components; `bevy_ui_render` provides the actual GPU draw calls. Missing
+> `bevy_ui_render` produces a grey screen — layout runs, state transitions work, but
+> nothing is painted. Always list both.
 
 ---
 

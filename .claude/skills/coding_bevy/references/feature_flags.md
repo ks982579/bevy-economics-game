@@ -51,7 +51,8 @@ specific capability not covered by a group.
 | `bevy_sprite` | `Sprite`, `SpritePlugin` |
 | `bevy_mesh` | `Mesh` asset type, primitive shapes |
 | `bevy_sprite_render` | `ColorMaterial`, `MeshMaterial2d`, colored mesh rendering |
-| `bevy_ui` | UI layout and widgets |
+| `bevy_ui` | UI layout engine (Taffy/flexbox) and widget components |
+| `bevy_ui_render` | **UI draw calls** — renders `Node` backgrounds, borders, and text to the screen. Without this, UI nodes exist and layout works but nothing is visible. Must be listed alongside `bevy_ui`. |
 | `bevy_text` | Text rendering |
 | `x11` | X11 window backend (required on WSL2) |
 | `dynamic_linking` | Faster iterative compile times in dev (never in release builds) |

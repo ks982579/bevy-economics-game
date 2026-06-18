@@ -69,6 +69,7 @@ New states go in a new file (`src/<state_name>.rs`) registered as a plugin in `m
 - `StateScoped` component does not exist in 0.18 — use an `*Entity` marker + `OnExit` cleanup system instead
 - Tests with `init_state` need `bevy::state::app::StatesPlugin` added alongside `MinimalPlugins`
 - State transitions (`NextState::set`) take effect after the frame — assert the new state after **two** `app.update()` calls
+- **`bevy_ui` and `bevy_ui_render` are separate features** — `bevy_ui` provides layout only; `bevy_ui_render` provides the GPU draw calls. Missing `bevy_ui_render` produces a grey screen with no errors.
 
 ## Controls Convention
 
